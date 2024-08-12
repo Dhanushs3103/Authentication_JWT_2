@@ -1,11 +1,7 @@
 // packages
-import { decrypt } from "dotenv";
-import mongoose from "mongoose";
+let mongoose = require("mongoose");
 
-//local imports
-
-// creating user schema for storing users data
-
+//create schema for storing user details
 let userSchema = mongoose.Schema({
     userName:{
         type:String,
@@ -21,19 +17,19 @@ let userSchema = mongoose.Schema({
     },
     role:{
         type:String,
-        enum:['librarian','member','guest'],
+        enum:["librarian","member","guest"],
         required:true
     },
     age:{
         type:Number,
         required:true
-    },
-
+    }
+},{
+    versionKey:false
 })
 
-//creating  UserModel
-
-let UserModel = mongoose.model('user',userSchema);
+// creating UserModel out userSchema
+let UserModel = mongoose.model("user",userSchema)
 
 // exporting the UserModel
-export default UserModel 
+module.exports = UserModel;

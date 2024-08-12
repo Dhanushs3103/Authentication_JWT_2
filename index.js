@@ -1,12 +1,11 @@
-// packages
-import dotenv from "dotenv"
-dotenv.config();
-import express from "express"
+// packages6
+let dotenv = require("dotenv").config()
+let express = require("express")
 
 //local imports
-import connection from "./config/db.connect.js"
-let PORT = process.env.PORT // port number
-import authRouter from "./routes/auth.routes.js";
+let connection = require("./config/db.connect.js");
+let PORT = parseInt(process.env.PORT,10) || 3005 // port number
+let authRouter = require("./routes/auth.routes.js")
 
 // starting the server
 let app = express()

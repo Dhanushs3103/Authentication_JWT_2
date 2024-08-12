@@ -1,13 +1,11 @@
 //packages
-import dotenv from "dotenv"
-dotenv.config();
-import mongoose from "mongoose";
+let mongoose = require("mongoose")
 
 // local imports
 let MONGO_URL = process.env.MONGO_URL;
 
 // Establishing connection
-let connection = mongoose.connect(MONGO_URL);
+let connection = mongoose.connect(MONGO_URL).catch(error => handleError(error));
 
 //exporting the connection
- export default connection
+module.exports = connection;
