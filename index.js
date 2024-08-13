@@ -6,6 +6,7 @@ let express = require("express")
 let connection = require("./config/db.connect.js");
 let PORT = parseInt(process.env.PORT,10) || 3005 // port number
 let authRouter = require("./routes/auth.routes.js")
+let libraryRouter = require("./routes/library.routes.js")
 
 // starting the server
 let app = express()
@@ -13,6 +14,7 @@ let app = express()
 //middlewares
 app.use(express.json())
 app.use('/auth',authRouter)
+app.use("/books",libraryRouter)
 
 //home route 
 app.get("/",(req,res)=>{

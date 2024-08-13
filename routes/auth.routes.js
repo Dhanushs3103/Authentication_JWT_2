@@ -8,8 +8,8 @@ let SECRET_KEY_1 = process.env.SECRET_KEY_1;
 let SECRET_KEY_2 = process.env.SECRET_KEY_2;
 let SALT_ROUNDS = parseInt(process.env.SALT_ROUNDS,10);
 let UserModel = require("../models/user.model.js");
-const { model } = require("mongoose");
-let authenticate = require("../middlewares/auth.middleware.js")
+let {authenticate,authorize} = require("../middlewares/auth.middleware.js")
+let BlackListedToken = require("../models/blacklistedToken.model.js")
 
 //middleware as a parent route
 let authRouter = express.Router();
@@ -52,7 +52,7 @@ authRouter.post("/register", async (req, res) => {
             res.status(500).json({message:err})
         }
         // If not present - Registering the new user
-        const newUser = await UserModel({
+        const newUser = await new UserModel({
             userName,password:hash,age,email,role
         });
         //saving the user to DB
@@ -89,6 +89,7 @@ authRouter.post("/login", async (req, res) => {
         }
         //checking if result is true or false
         if(result){
+          //generating the tokens
           let accessToken = generateAccessToken({role:user.role});
           let refreshToken = generateRefreshToken({role:user.role})
           //Checking if token exits or not
@@ -96,8 +97,10 @@ authRouter.post("/login", async (req, res) => {
             return res.status(500).json({ message: "Error generating tokens" });
         }
          // Setting tokens as headers
-         res.set('Access_Token', `Bearer ${accessToken}`);
-         res.set('Refresh_Token', `Bearer ${refreshToken}`);
+         res.header({
+          'Access_Token': `Bearer ${accessToken}`,
+          'Refresh_Token': `Bearer ${refreshToken}`
+         })
          //sending response as login successful
          res.status(200).json({message:"login successful",})
         }else{
@@ -118,10 +121,76 @@ authRouter.post("/login", async (req, res) => {
  }
 });
 
-// // testing route - delete it later
-// authRouter.get("/users", authenticate, (req,res)=>{
-//   res.send("Users data ...")
-// })
+//route for updating the user details
+authRouter.put("/updateUser",[authenticate,authorize(["librarian"])], (req,res)=>{
+  res.status(201).json({message:"user updated successfully"})
+})
+
+//route for deleting the user
+authRouter.delete("/deleteUser",[authenticate,authorize(["librarian"])],(req,res)=>{
+  res.status(200).json({message:"user deleted successfully"})
+})
+
+// testing route - delete it later
+authRouter.get("/get-accessToken", async (req,res)=>{
+    try {
+       // Extracting the token from req.headers
+       let authHeader = req.headers.refresh_token;
+       //checking if authHeaders are present
+       if (!authHeader) {
+           return res.status(401).send("refresh_token header missing");
+       }
+       //checking if token is present
+       let token = authHeader.split(" ")[1];
+       if (!token) {
+           return res.status(401).send("Token not found");
+       }
+
+       // Verifying token
+       jwt.verify(token, SECRET_KEY_2, function(err, decoded) {
+           // Error handling
+           if (err) {
+               return res.status(401).send("User not authenticated, please login");
+           }
+           // If token is decoded - move forward
+           if (decoded) {
+             let newAccessToken = generateRefreshToken({role:decoded.role});
+             //sending new token in headers 
+             res.header({
+              access_token: `Bearer ${newAccessToken}`
+             }).status(201).send("New access_token generated successfully")
+           }
+       });
+    } catch (error) {
+      console.log(error);
+      res.status(500).json({message:error})
+    }
+})
+
+authRouter.post("/logout",async(req,res)=>{
+  try {
+    let authHeader = req.headers.access_token;
+    //checking if authHeaders are present
+    if (!authHeader) {
+        return res.status(401).send("Access_token header missing");
+    }
+    //checking if token is present
+    let token = authHeader.split(" ")[1];
+    if (!token) {
+        return res.status(401).send("Token not found");
+    }
+    // adding the token of the user to blackListedToken, so the user can login again with same token.
+    let newBlackListedToken = await BlackListedToken({token});
+    // saving the token in the DB
+    await newBlackListedToken.save();
+    //sending the response
+    res.status(200).json({message:"logged out successfully"})
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({message:error})
+    
+  }
+})
 
 
 //exporting the authRouter

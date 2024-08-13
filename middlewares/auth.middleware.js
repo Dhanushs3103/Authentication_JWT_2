@@ -3,6 +3,7 @@ let jwt = require("jsonwebtoken");
 
 // Local imports
 let SECRET_KEY_1 = process.env.SECRET_KEY_1;
+let BlackListedToken = require("../models/blacklistedToken.model.js")
 
 // Auth middleware
 async function authenticate(req, res, next) {
@@ -18,6 +19,14 @@ async function authenticate(req, res, next) {
         if (!token) {
             return res.status(401).send("Token not found");
         }
+        
+        // checking if the above token is blackListed or not
+        let blackListedToken = await BlackListedToken.findOne({token});
+        // if exits, sending res, as User logged out, please login
+        if(blackListedToken) {
+            return res.status(401).json({message:"User logged out, please login"})
+        }
+        
 
         // Verifying token
         jwt.verify(token, SECRET_KEY_1, function(err, decoded) {
@@ -27,6 +36,7 @@ async function authenticate(req, res, next) {
             }
             // If token is decoded - move forward
             if (decoded) {
+                req.body.role = decoded.role;
                 next(); 
             }
         });
@@ -36,4 +46,21 @@ async function authenticate(req, res, next) {
     }
 }
 
-module.exports = authenticate;
+function authorize(permittedRoles) {
+    return async (req, res, next) => {
+        try {
+            //  checking if the user's role is present in the permitted roles
+            if (permittedRoles.includes(req.body.role)) {
+                next(); 
+            } else {
+                res.status(403).json({ message: "User not authorized to access this route" });
+            }
+        } catch (error) {
+            console.log(error);
+            res.status(500).json({ message: "Internal Server Error" });
+        }
+    };
+}
+
+
+module.exports = {authenticate,authorize};
