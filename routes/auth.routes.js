@@ -15,9 +15,9 @@ let BlackListedToken = require("../models/blacklistedToken.model.js")
 let authRouter = express.Router();
 
 // function to generate accessToken
-function generateAccessToken(payload) {
+function generateAccessToken(payload,duration) {
   try {
-      return jwt.sign(payload, SECRET_KEY_1, { expiresIn: "15m" });
+      return jwt.sign(payload, SECRET_KEY_1, duration);
   } catch (error) {
       console.error("Error generating access token:", error);
       return null;
@@ -66,7 +66,7 @@ authRouter.post("/register", async (req, res) => {
     });
   } catch (error) {
     console.log(error);
-    res.status(401).json({ message: error });
+    res.status(500).json({ message: error });
   }
 });
 
@@ -90,7 +90,7 @@ authRouter.post("/login", async (req, res) => {
         //checking if result is true or false
         if(result){
           //generating the tokens
-          let accessToken = generateAccessToken({role:user.role});
+          let accessToken = generateAccessToken({role:user.role},{expiresIn:"15m"});
           let refreshToken = generateRefreshToken({role:user.role})
           //Checking if token exits or not
           if (!accessToken || !refreshToken) {
@@ -121,7 +121,7 @@ authRouter.post("/login", async (req, res) => {
  }
 });
 
-//route for updating the user details
+//route for updating the user details 
 authRouter.put("/updateUser",[authenticate,authorize(["librarian"])], (req,res)=>{
   res.status(201).json({message:"user updated successfully"})
 })
@@ -135,7 +135,7 @@ authRouter.delete("/deleteUser",[authenticate,authorize(["librarian"])],(req,res
 authRouter.get("/get-accessToken", async (req,res)=>{
     try {
        // Extracting the token from req.headers
-       let authHeader = req.headers.refresh_token;
+       let authHeader = req.headers.Refresh_Token;
        //checking if authHeaders are present
        if (!authHeader) {
            return res.status(401).send("refresh_token header missing");
@@ -154,12 +154,12 @@ authRouter.get("/get-accessToken", async (req,res)=>{
            }
            // If token is decoded - move forward
            if (decoded) {
-             let newAccessToken = generateRefreshToken({role:decoded.role});
+             let newAccessToken = generateAccessToken({role:decoded.role},{expiresIn:"12h"});
              //sending new token in headers 
              res.header({
               access_token: `Bearer ${newAccessToken}`
              }).status(201).send("New access_token generated successfully")
-           }
+           } 
        });
     } catch (error) {
       console.log(error);
@@ -167,7 +167,7 @@ authRouter.get("/get-accessToken", async (req,res)=>{
     }
 })
 
-authRouter.post("/logout",async(req,res)=>{
+authRouter.post("/logout",authenticate,async(req,res)=>{
   try {
     let authHeader = req.headers.access_token;
     //checking if authHeaders are present
@@ -179,7 +179,7 @@ authRouter.post("/logout",async(req,res)=>{
     if (!token) {
         return res.status(401).send("Token not found");
     }
-    // adding the token of the user to blackListedToken, so the user can login again with same token.
+    // adding the token of the user to blackListedToken, so the user can't login again with same token.
     let newBlackListedToken = await BlackListedToken({token});
     // saving the token in the DB
     await newBlackListedToken.save();

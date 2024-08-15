@@ -1,4 +1,4 @@
-// packages6
+// packages
 let dotenv = require("dotenv").config()
 let express = require("express")
 
@@ -7,11 +7,18 @@ let connection = require("./config/db.connect.js");
 let PORT = parseInt(process.env.PORT,10) || 3005 // port number
 let authRouter = require("./routes/auth.routes.js")
 let libraryRouter = require("./routes/library.routes.js")
+let cors = require("cors")
 
 // starting the server
 let app = express()
 
 //middlewares
+app.use(cors({
+    "origin": "*",
+    "methods": "GET,HEAD,PUT,PATCH,POST,DELETE",
+    "preflightContinue": false,
+    "optionsSuccessStatus": 204
+  }))
 app.use(express.json())
 app.use('/auth',authRouter)
 app.use("/books",libraryRouter)

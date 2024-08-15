@@ -19,15 +19,12 @@ async function authenticate(req, res, next) {
         if (!token) {
             return res.status(401).send("Token not found");
         }
-        
         // checking if the above token is blackListed or not
         let blackListedToken = await BlackListedToken.findOne({token});
         // if exits, sending res, as User logged out, please login
         if(blackListedToken) {
             return res.status(401).json({message:"User logged out, please login"})
         }
-        
-
         // Verifying token
         jwt.verify(token, SECRET_KEY_1, function(err, decoded) {
             // Error handling
