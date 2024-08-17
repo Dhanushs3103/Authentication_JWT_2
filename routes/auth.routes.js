@@ -98,8 +98,8 @@ authRouter.post("/login", async (req, res) => {
         }
          // Setting tokens as headers
          res.header({
-          'Access_Token': `Bearer ${accessToken}`,
-          'Refresh_Token': `Bearer ${refreshToken}`
+          Access_Token: `Bearer ${accessToken}`,
+          Refresh_Token: `Bearer ${refreshToken}`
          })
          //sending response as login successful
          res.status(200).json({message:"login successful",})
@@ -157,7 +157,7 @@ authRouter.get("/get-accessToken", async (req,res)=>{
              let newAccessToken = generateAccessToken({role:decoded.role},{expiresIn:"12h"});
              //sending new token in headers 
              res.header({
-              access_token: `Bearer ${newAccessToken}`
+              Access_Token: `Bearer ${newAccessToken}`
              }).status(201).send("New access_token generated successfully")
            } 
        });
